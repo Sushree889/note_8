@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Birthday Surprise</title>
+    <link href="https://fonts.googleapis.com/css2?family=Dancing+Script:wght@700&family=Poppins:wght@500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <style>
+        :root { --cherry: #d2042d; --maroon: #800000; --gold: #c5a059; }
+        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+        body, html { margin: 0; padding: 0; height: 100%; width: 100%; font-family: 'Poppins', sans-serif; overflow: hidden; background: #fffafb; }
+
+        /* HANGING HEARTS */
+        .hearts-container { position: fixed; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 5; }
+        .hanging-heart { position: absolute; top: -20px; width: 2px; background: rgba(255, 105, 180, 0.4); transform-origin: top; animation: swing var(--speed) infinite ease-in-out; }
+        .hanging-heart::after { content: '❤️'; position: absolute; bottom: -30px; left: -18px; font-size: var(--size); }
+        @keyframes swing { 0%, 100% { transform: rotate(-12deg); } 50% { transform: rotate(12deg); } }
+
+        /* NAVIGATION */
+        .slide { position: absolute; inset: 0; display: none; flex-direction: column; align-items: center; justify-content: center; text-align: center; z-index: 10; padding: 20px; }
+        .active { display: flex !important; }
+
+        /* THE LETTER MODAL */
+        .modal { display: none; position: fixed; inset: 0; z-index: 1000; align-items: center; justify-content: center; padding: 25px; background: rgba(0,0,0,0.4); }
+        
+        /* WIDE SQUARE RATIO (1 : 1.2) - NO SCROLLING */
+        .letter-card {
+            background: white; 
+            width: 95%; max-width: 500px; 
+            aspect-ratio: 1 / 1.2; 
+            padding: 30px 20px; border-radius: 30px; 
+            position: relative; box-shadow: 0 40px 100px rgba(0,0,0,0.5); 
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            overflow: visible; /* Prevents corner animations from being cut */
+        }
+
+        .top-photo {
+            width: 160px; height: 160px; object-fit: cover;
+            border: 6px solid white; border-radius: 20px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.15); margin-bottom: 15px;
+        }
+
+        /* CORNER ANIMATIONS - Anchored INSIDE the screen */
+        .huge-corner { position: absolute; font-size: 90px; z-index: 2005; pointer-events: none; }
+        .t-l { top: -35px; left: -25px; animation: bounce 3s infinite; } /* Teddy 🧸 */
+        .t-r { top: -30px; right: -20px; background: white; padding: 10px; border-radius: 12px; font-size: 22px; color: var(--cherry); font-weight: bold; border-top: 6px solid red; box-shadow: 0 10px 20px rgba(0,0,0,0.1); line-height: 1; }
+        .b-l { bottom: -30px; left: -25px; animation: pulse 1s infinite; } /* Heart ❤️ */
+        .b-r { bottom: -30px; right: -25px; animation: shake 0.5s infinite; } /* Party 🎉 */
+
+        @keyframes bounce { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-20px); } }
+        @keyframes pulse { 0% { transform: scale(1); } 50% { transform: scale(1.2); } 100% { transform: scale(1); } }
+        @keyframes shake { 0%, 100% { transform: rotate(0); } 25% { transform: rotate(10deg); } 75% { transform: rotate(-10deg); } }
+
+        /* BOLD READABLE TEXT */
+        .letter-content {
+            color: #000; line-height: 1.5; text-align: center; 
+            font-size: 0.95rem; font-weight: 600; 
+        }
+
+        /* OFFICIAL VOUCHER */
+        .official-voucher {
+            background: #fff; border: 8px double var(--gold);
+            padding: 40px 25px; border-radius: 10px; text-align: center;
+            max-width: 380px; position: relative; box-shadow: 0 20px 50px rgba(0,0,0,0.3);
+        }
+
+        /* GAME STYLES */
+        .box-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 20px; margin-top: 20px; }
+        .box { width: 120px; height: 120px; background: white; border: 4px solid var(--cherry); border-radius: 25px; font-size: 55px; display: flex; align-items: center; justify-content: center; cursor: pointer; }
+
+        .btn { padding: 14px 28px; border-radius: 50px; border: none; font-weight: bold; cursor: pointer; text-decoration: none; display: inline-block; }
+        .btn-cherry { background: var(--cherry); color: white; margin-top: 15px; }
+        .btn-gold { background: var(--gold); color: white; margin-top: 20px; width: 100%; }
+        .btn-green { background: #25D366; color: white; width: 100%; margin-top: 15px; text-align: center; font-size: 1.1rem; }
+        .btn-try { background: #f8f8f8; color: #444; margin-top: 15px; font-size: 0.85rem; border: 1px solid #ddd; }
+    </style>
+</head>
+<body>
+
+    <audio id="tadaSound" src="https://www.myinstants.com/media/sounds/tada.mp3"></audio>
+    <div class="hearts-container" id="hearts-bg"></div>
+
+    <div id="slide1" class="slide active">
+        <h1 style="font-family: 'Dancing Script'; font-size: 2.6rem; color: var(--maroon);">There is something special today... wanna me to reveal it? 😌</h1>
+        <div style="display: flex; gap: 20px;">
+            <button class="btn btn-cherry" onclick="nav('slide2')">YES ✨</button>
+            <button class="btn" style="background: #ddd;" onclick="nav('slide-no')">NO 🥺</button>
+        </div>
+    </div>
+
+    <div id="slide-no" class="slide">
+        <div style="font-size: 80px;">💔</div>
+        <h2 style="color: var(--cherry);">Awwwwww... u broke my heart 🥺😫</h2>
+        <button class="btn btn-cherry" onclick="nav('slide1')">Give me another chance!</button>
+    </div>
+
+    <div id="slide2" class="slide">
+        <div style="font-size: 70px;">🐥</div>
+        <h1 style="font-family: 'Dancing Script'; font-size: 2.3rem; color: var(--maroon);">There is nothing special more than you bundi ke ladoo 🐥</h1>
+        <button class="btn btn-cherry" onclick="nav('slide3')">Now choose a box! 🎁</button>
+    </div>
+
+    <div id="slide3" class="slide">
+        <h1 style="font-family: 'Dancing Script'; font-size: 2.3rem; color: var(--maroon);">Pick your gift 🎁</h1>
+        <p id="chance-text" style="color: var(--cherry); font-weight: bold; font-size: 1.3rem;">Chances left: 3</p>
+        <div class="box-grid">
+            <div class="box" onclick="checkBox(1)">🎁</div>
+            <div class="box" onclick="checkBox(2)">🎁</div>
+            <div class="box" onclick="checkBox(3)">🎁</div>
+            <div class="box" onclick="checkBox(4)">🎁</div>
+        </div>
+    </div>
+
+    <div id="modal-1" class="modal">
+        <div class="official-voucher" id="voucher-card">
+            <h1 style="color: var(--gold); margin: 0; font-family: serif; letter-spacing: 3px;">CONGRATULATIONS</h1>
+            <p style="font-size: 1.2rem; line-height: 1.6; font-weight: 600; color: #222;">You have officially won a <br><b>Konark Trip with Jagruti</b> 💃🏻🕺🏻</p>
+            <div style="margin: 20px 0; border: 1.5px dashed var(--gold); padding: 12px; background: #fffcf5;">
+                <span style="font-size: 0.9rem; color: #555;">VALIDITY:</span><br>
+                <strong style="color: var(--maroon); font-size: 1.25rem;">7TH FEB 2027</strong>
+            </div>
+            <button class="btn btn-gold" onclick="downloadVoucher()">DOWNLOAD VOUCHER 📥</button>
+            <br><button class="btn btn-try" onclick="closeAll()">Try Again</button>
+        </div>
+    </div>
+
+    <div id="modal-4" class="modal">
+        <div style="background: white; padding: 40px; border-radius: 25px; text-align: center; border: 4px solid var(--cherry);">
+            <div style="font-size: 60px;">🎤🔥</div>
+            <h3 style="font-weight: 700;">OFFICIAL DARE</h3>
+            <p style="font-weight: 600; color: #000;">I dare you to send me **Voice Messages** for the **whole year** instead of text! 🫠🤌🏻</p>
+            <button class="btn btn-try" onclick="closeAll()">Accept & Try Again 😎</button>
+        </div>
+    </div>
+
+    <div id="modal-3" class="modal" style="background: var(--cherry);">
+        <div class="letter-card">
+            <div class="huge-corner t-l">🧸</div> 
+            <div class="huge-corner t-r">FEB<br>07</div>
+            <div class="huge-corner b-l">❤️</div>
+            <div class="huge-corner b-r">🎉</div>
+
+            <img src="IMG_20251228_075947.jpg" class="top-photo" alt="Birthday Boy">
+            
+            <div class="letter-content">
+                <p style="margin: 5px 0;">It may feel like cringe, but I thought my favourite thing to listen to was music till I heard your laugh 😭🤌🏻</p>
+                <h2 style="font-family: 'Dancing Script'; font-size: 1.8rem; color: var(--cherry); margin: 8px 0;">Happy Birthday Cutie 🫂</h2>
+                <p>It's not just about the day, but about the upcoming achievements, happiness, and wealth you are going to achieve 🥹❤️<br>
+                Keep shining, and keep one thing in mind that you don't have to be strong always 🙃🙃<br>
+                Whenever things feel overwhelming or stressful, you can consider me without any second thought 🫠<br>
+                I don't know how your next birthdays will be for me, but let me wish this one with all my heart 🥹❤️<br>
+                Thank you for being patient with me, and just remember one thing — if we ever become strangers again, always protect and respect what we share 🫠🤌🏻<br>
+                And always be the <b>GENTLEMAN as you are</b> 🫂<br>
+                Lob U Sooo Much ❤️✨ my ungrateful potato.<br>Don’t let anyone dim your spark and smile 🫂</p>
+                
+                <a href="https://wa.me/?text=Jagruti...%20Thank%20you%20so%20much%20for%20this!%20🫂❤️" class="btn btn-green">Send Hugs on WhatsApp 🫂❤️</a>
+                <br><button class="btn btn-try" onclick="closeAll()">Try another box 🎁</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let tries = 3;
+
+        function nav(id) {
+            document.querySelectorAll('.slide').forEach(s => s.classList.remove('active'));
+            document.getElementById(id).classList.add('active');
+        }
+
+        function closeAll() {
+            document.querySelectorAll('.modal').forEach(m => m.style.display = 'none');
+            document.getElementById('chance-text').innerText = "Chances left: " + tries;
+            if (tries <= 0) showFinal();
+        }
+
+        function checkBox(n) {
+            if (n === 3) { showFinal(); return; }
+            tries--;
+            if (tries === 0) { setTimeout(showFinal, 300); }
+            else {
+                if (n === 1) document.getElementById('modal-1').style.display = 'flex';
+                else if (n === 4) document.getElementById('modal-4').style.display = 'flex';
+                else { alert("Empty! Try another."); document.getElementById('chance-text').innerText = "Chances left: " + tries; }
+            }
+        }
+
+        function showFinal() {
+            document.getElementById('tadaSound').play().catch(()=>{});
+            document.getElementById('modal-3').style.display = 'flex';
+        }
+
+        function downloadVoucher() {
+            const voucher = document.getElementById('voucher-card');
+            html2canvas(voucher).then(canvas => {
+                const link = document.createElement('a');
+                link.download = 'Konark_Trip_Voucher.png';
+                link.href = canvas.toDataURL();
+                link.click();
+            });
+        }
+
+        const container = document.getElementById('hearts-bg');
+        for (let i = 0; i < 25; i++) {
+            const h = document.createElement('div');
+            h.className = 'hanging-heart';
+            h.style.left = Math.random() * 95 + '%';
+            h.style.height = Math.random() * 250 + 100 + 'px';
+            h.style.setProperty('--speed', Math.random() * 2 + 3 + 's');
+            h.style.setProperty('--size', Math.random() * 10 + 20 + 'px');
+            container.appendChild(h);
+        }
+    </script>
+</body>
+  </html>
+
